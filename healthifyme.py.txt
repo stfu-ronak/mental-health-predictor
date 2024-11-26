@@ -1,0 +1,77 @@
+import pandas as pd
+import numpy as np
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import accuracy_score, classification_report
+
+# Load the dataset
+df = pd.read_csv('synthetic_health_data_ml.csv')
+
+# Features and target
+X = df.drop('health_status', axis=1)
+y = df['health_status']
+
+# Split the data into training and testing sets
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# Initialize the model
+model = LogisticRegression()
+
+# Train the model
+model.fit(X_train, y_train)
+
+# Predict probabilities
+y_pred_prob = model.predict_proba(X_test)[:, 1]
+
+# Adjust the threshold
+threshold = 0.5
+y_pred_adjusted = (y_pred_prob >= threshold).astype(int)
+
+# Evaluate the model with the adjusted threshold
+accuracy = accuracy_score(y_test, y_pred_adjusted)
+print(f'Accuracy: {accuracy:.2f}')
+print(classification_report(y_test, y_pred_adjusted, zero_division=0))
+
+
+
+
+
+
+import streamlit as st
+import numpy as np
+
+# Define the Streamlit app
+st.title("Healthify Pro Lite - Health Tracker and Predictor")
+
+# User input
+age = st.number_input("Enter your age", min_value=0, max_value=120)
+weight = st.number_input("Enter your weight (kg)", min_value=0)
+height = st.number_input("Enter your height (cm)", min_value=0)
+heart_rate = st.number_input("Enter your heart rate (bpm)", min_value=0)
+sleep_duration = st.number_input("Enter your sleep duration (hours)", min_value=0.0)
+activity_level = st.selectbox("Select your activity level", ["low", "medium", "high"])
+
+activity_level_mapping = {'low': 0, 'medium': 1, 'high': 2}
+activity_level = activity_level_mapping[activity_level]
+
+# Predict and recommend button
+if st.button("Get Health Insights"):
+    user_data = pd.DataFrame([[age, weight, height, heart_rate, sleep_duration, activity_level]],
+                             columns=['age', 'weight', 'height', 'heart_rate', 'sleep_duration', 'activity_level'])
+    user_prob = model.predict_proba(user_data)[:, 1]
+    prediction = (user_prob >= threshold).astype(int)[0]
+    st.write(f"Predicted Health Status: {'Healthy' if prediction == 0 else 'At Risk'}")
+
+    def generate_recommendations(data):
+        recommendations = []
+        if data['activity_level'] == 0:
+            recommendations.append("Increase your daily activity by walking 30 minutes a day.")
+        if data['sleep_duration'] < 7:
+            recommendations.append("Aim for at least 7-8 hours of sleep each night.")
+        # Add more personalized recommendations based on user data
+        return recommendations
+
+    recommendations = generate_recommendations(user_data.iloc[0])
+    st.write("Personalized Recommendations:")
+    for rec in recommendations:
+        st.write("- " + rec)
